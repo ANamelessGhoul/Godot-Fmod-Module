@@ -185,9 +185,8 @@ public:
 	bool descIsOneShot(uint64_t descHandle);
 	bool descIsSnapshot(uint64_t descHandle);
 	bool descIsStream(uint64_t descHandle);
-	bool descHasCue(uint64_t descHandle);
-	float descGetMaximumDistance(uint64_t descHandle);
-	float descGetMinimumDistance(uint64_t descHandle);
+	bool descHasSustainPoint(uint64_t descHandle);
+	Array descGetMinMaxDistance(uint64_t descHandle);
 	float descGetSoundSize(uint64_t descHandle);
 	Dictionary descGetParameterDescriptionByName(uint64_t descHandle, const String &name);
 	Dictionary descGetParameterDescriptionByID(uint64_t descHandle, const Array &idPair);
@@ -205,7 +204,7 @@ public:
 	void releaseEvent(uint64_t instanceId);
 	void startEvent(uint64_t instanceId);
 	void stopEvent(uint64_t instanceId, int stopMode);
-	void triggerEventCue(uint64_t instanceId);
+	void eventKeyOff(uint64_t instanceId);
 	int getEventPlaybackState(uint64_t instanceId);
 	bool getEventPaused(uint64_t instanceId);
 	void setEventPaused(uint64_t instanceId, bool paused);

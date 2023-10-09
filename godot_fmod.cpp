@@ -307,14 +307,16 @@ Dictionary Fmod::getPerformanceData() {
 	Dictionary performanceData;
 
 	// get the CPU usage
-	FMOD_STUDIO_CPU_USAGE cpuUsage;
-	checkErrors(system->getCPUUsage(&cpuUsage));
+    FMOD_STUDIO_CPU_USAGE studioCpuUsage;
+    FMOD_CPU_USAGE cpuUsage;
+    checkErrors(system->getCPUUsage(&studioCpuUsage, &cpuUsage));
 	Dictionary cpuPerfData;
-	cpuPerfData["dsp"] = cpuUsage.dspusage;
-	cpuPerfData["geometry"] = cpuUsage.geometryusage;
-	cpuPerfData["stream"] = cpuUsage.streamusage;
-	cpuPerfData["studio"] = cpuUsage.studiousage;
-	cpuPerfData["update"] = cpuUsage.updateusage;
+    cpuPerfData["dsp"] = cpuUsage.dsp;
+    cpuPerfData["geometry"] = cpuUsage.geometry;
+    cpuPerfData["stream"] = cpuUsage.stream;
+    cpuPerfData["update"] = cpuUsage.update;
+    cpuPerfData["convolution1"] = cpuUsage.convolution1;
+    cpuPerfData["convolution2"] = cpuUsage.convolution2;
 	performanceData["CPU"] = cpuPerfData;
 
 	// get the memory usage
@@ -538,28 +540,25 @@ bool Fmod::descIsStream(uint64_t descHandle) {
 	return isStream;
 }
 
-bool Fmod::descHasCue(uint64_t descHandle) {
+bool Fmod::descHasSustainPoint(uint64_t descHandle) {
 	if (!ptrToEventDescMap.has(descHandle)) return false;
 	auto desc = ptrToEventDescMap.find(descHandle)->value();
-	bool hasCue = false;
-	checkErrors(desc->hasCue(&hasCue));
-	return hasCue;
+	bool hasSustainPoint = false;
+	checkErrors(desc->hasSustainPoint(&hasSustainPoint));
+	return hasSustainPoint;
 }
 
-float Fmod::descGetMaximumDistance(uint64_t descHandle) {
-	if (!ptrToEventDescMap.has(descHandle)) return 0.f;
-	auto desc = ptrToEventDescMap.find(descHandle)->value();
-	float maxDist = 0.f;
-	checkErrors(desc->getMaximumDistance(&maxDist));
-	return maxDist;
-}
+Array Fmod::descGetMinMaxDistance(uint64_t descHandle) {
+	float minDistance;
+    float maxDistance;
+    Array ret;
 
-float Fmod::descGetMinimumDistance(uint64_t descHandle) {
-	if (!ptrToEventDescMap.has(descHandle)) return 0.f;
+	if (!ptrToEventDescMap.has(descHandle)) return ret;
 	auto desc = ptrToEventDescMap.find(descHandle)->value();
-	float minDist = 0.f;
-	checkErrors(desc->getMinimumDistance(&minDist));
-	return minDist;
+	checkErrors(desc->getMinMaxDistance(&minDistance, &maxDistance));
+	ret.append(minDistance);
+    ret.append(maxDistance);
+	return ret;
 }
 
 float Fmod::descGetSoundSize(uint64_t descHandle) {
@@ -829,10 +828,11 @@ void Fmod::stopEvent(uint64_t instanceId, int stopMode) {
 	}
 }
 
-void Fmod::triggerEventCue(uint64_t instanceId) {
+void Fmod::eventKeyOff(uint64_t instanceId) {
 	if (!events.has(instanceId)) return;
 	auto i = events.find(instanceId);
-	if (i->value()) checkErrors(i->value()->triggerCue());
+	
+	if (i->value()) checkErrors(i->value()->keyOff());
 }
 
 int Fmod::getEventPlaybackState(uint64_t instanceId) {
@@ -1561,9 +1561,8 @@ void Fmod::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("event_desc_is_oneshot", "desc_handle"), &Fmod::descIsOneShot);
 	ClassDB::bind_method(D_METHOD("event_desc_is_snapshot", "desc_handle"), &Fmod::descIsSnapshot);
 	ClassDB::bind_method(D_METHOD("event_desc_is_stream", "desc_handle"), &Fmod::descIsStream);
-	ClassDB::bind_method(D_METHOD("event_desc_has_cue", "desc_handle"), &Fmod::descHasCue);
-	ClassDB::bind_method(D_METHOD("event_desc_get_maximum_distance", "desc_handle"), &Fmod::descGetMaximumDistance);
-	ClassDB::bind_method(D_METHOD("event_desc_get_minimum_distance", "desc_handle"), &Fmod::descGetMinimumDistance);
+	ClassDB::bind_method(D_METHOD("event_desc_has_sustain_point", "desc_handle"), &Fmod::descHasSustainPoint);
+	ClassDB::bind_method(D_METHOD("event_desc_get_min_max_distance", "desc_handle"), &Fmod::descGetMinMaxDistance);
 	ClassDB::bind_method(D_METHOD("event_desc_get_sound_size", "desc_handle"), &Fmod::descGetSoundSize);
 	ClassDB::bind_method(D_METHOD("event_desc_get_parameter_desc_by_name", "desc_handle", "parameter_name"), &Fmod::descGetParameterDescriptionByName);
 	ClassDB::bind_method(D_METHOD("event_desc_get_parameter_desc_by_id", "desc_handle", "id_pair"), &Fmod::descGetParameterDescriptionByID);
@@ -1581,7 +1580,7 @@ void Fmod::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("event_release", "handle"), &Fmod::releaseEvent);
 	ClassDB::bind_method(D_METHOD("event_start", "handle"), &Fmod::startEvent);
 	ClassDB::bind_method(D_METHOD("event_stop", "handle", "stop_mode"), &Fmod::stopEvent);
-	ClassDB::bind_method(D_METHOD("event_trigger_cue", "handle"), &Fmod::triggerEventCue);
+	ClassDB::bind_method(D_METHOD("event_key_off", "handle"), &Fmod::eventKeyOff);
 	ClassDB::bind_method(D_METHOD("event_get_playback_state", "handle"), &Fmod::getEventPlaybackState);
 	ClassDB::bind_method(D_METHOD("event_get_paused", "handle"), &Fmod::getEventPaused);
 	ClassDB::bind_method(D_METHOD("event_set_paused", "handle", "paused"), &Fmod::setEventPaused);
@@ -1735,12 +1734,12 @@ Fmod::Fmod() {
 	singleton = this;
 	system = nullptr;
 	coreSystem = nullptr;
-	Callbacks::mut = Mutex::create();
+	Callbacks::mut = new Mutex();
 	checkErrors(FMOD::Studio::System::create(&system));
 	checkErrors(system->getCoreSystem(&coreSystem));
 }
 
 Fmod::~Fmod() {
-	Callbacks::mut->~Mutex();
+	delete Callbacks::mut;
 	singleton = nullptr;
 }
