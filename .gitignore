@@ -2,6 +2,7 @@
 api/fsbank
 api/core
 api/studio
+api/
 
 demo/.import/
 demo/test_sounds/
