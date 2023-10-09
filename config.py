@@ -1,5 +1,5 @@
 def can_build(env, platform):
-    return platform == "x11" or platform == "windows" or platform == "osx" or platform == "android" or platform == "iphone"
+    return platform == "x11" or platform == "windows" or platform == "osx" or platform == "android" or platform == "iphone" or platform == "javascript"
 
 
 def configure(env):
@@ -41,3 +41,8 @@ def configure(env):
         env.Append(LIBPATH=["#modules/fmod/api/core/lib/",
                             "#modules/fmod/api/studio/lib/"])
         env.Append(LIBS=["libfmod_iphoneos.a", "libfmodstudio_iphoneos.a"])
+    
+    elif env["platform"] == "javascript":
+        env.Append(LIBS=["fmod_wasm.a", "fmodstudio_wasm.a"])
+        env.Append(LIBPATH=["#modules/fmod/api/core/lib/upstream/w32/",
+                                "#modules/fmod/api/studio/lib/upstream/w32/"])
