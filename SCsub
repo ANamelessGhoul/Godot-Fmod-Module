@@ -8,7 +8,7 @@ def sys_exec(args):
 
 module_env = env.Clone()
 module_env.add_source_files(env.modules_sources,"*.cpp") 
-module_env.Append(CPPPATH=["#modules/fmod/api/core/inc", "#modules/fmod/api/studio/inc"])
+module_env.Append(CPPPATH=[f"#modules/fmod/api/{module_env['platform']}/core/inc", f"#modules/fmod/api/{module_env['platform']}/studio/inc"])
 
 if env["platform"] == "iphone":
     sys_exec(["cp", "api/core/lib/libfmod_iphoneos.a", "../../platform/iphone/libfmod_iphoneos.a"])
