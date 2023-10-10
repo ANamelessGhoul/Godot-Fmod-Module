@@ -41,6 +41,34 @@ void Fmod::init(int numOfChannels, int studioFlags, int flags) {
 			print_line("FMOD Sound System: Live update enabled!");
 	} else
 		print_error("FMOD Sound System: Failed to initialize :|");
+	
+
+#if !defined(NO_THREADS)
+	if (checkErrors(coreSystem->setFileSystem(
+			&Callbacks::godotFileOpen,
+			&Callbacks::godotFileClose,
+			nullptr,
+			nullptr,
+			&Callbacks::godotSyncRead,
+			&Callbacks::godotSyncCancel,
+			-1))) {
+	print_line("Custom File System enabled.");
+    };
+
+	Callbacks::GodotFileRunner::get_singleton()->start();
+#else
+	if (checkErrors(coreSystem->setFileSystem(
+			&Callbacks::godotFileOpen,
+			&Callbacks::godotFileClose,
+			&Callbacks::godotFileRead,
+			&Callbacks::godotFileSeek,
+			nullptr,
+			nullptr,
+			-1))) {
+	print_line("Custom File System enabled.");
+    };
+#endif
+
 }
 
 void Fmod::update() {
@@ -367,6 +395,7 @@ String Fmod::loadbank(const String &pathToBank, int flags) {
 	if (banks.has(pathToBank)) return pathToBank; // bank is already loaded
 	FMOD::Studio::Bank *bank = nullptr;
 	checkErrors(system->loadBankFile(pathToBank.ascii().get_data(), flags, &bank));
+	print_line(vformat("Loaded Bank: %s", pathToBank));
 	if (bank) {
 		banks.insert(pathToBank, bank);
 		return pathToBank;
@@ -1043,6 +1072,12 @@ void Fmod::playOneShot(const String &eventName, Object *gameObj) {
 		}
 		checkErrors(instance->start());
 		checkErrors(instance->release());
+		print_line(vformat("Playing One-Shot: %s", eventName));
+	}
+	else
+	{
+		print_line(vformat("Couldn't find event: %s", eventName));
+
 	}
 }
 
@@ -1740,6 +1775,9 @@ Fmod::Fmod() {
 }
 
 Fmod::~Fmod() {
+#if !defined(NO_THREADS)
+	Callbacks::GodotFileRunner::get_singleton()->finish();
+#endif
 	delete Callbacks::mut;
 	singleton = nullptr;
 }

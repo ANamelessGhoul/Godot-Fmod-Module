@@ -48,6 +48,7 @@
 #include "api/studio/inc/fmod_studio.hpp"
 
 #include "callbacks.h"
+#include "file_callbacks.h"
 
 class Fmod : public Object {
 public:

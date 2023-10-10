@@ -31,6 +31,7 @@
 
 #include "core/dictionary.h"
 #include "core/map.h"
+#include "core/os/mutex.h"
 
 #include "api/studio/inc/fmod_studio.hpp"
 
