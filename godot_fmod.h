@@ -43,9 +43,9 @@
 #include "scene/3d/spatial.h"
 #include "scene/main/node.h"
 
-#include "api/core/inc/fmod.hpp"
-#include "api/core/inc/fmod_errors.h"
-#include "api/studio/inc/fmod_studio.hpp"
+#include "fmod.hpp"
+#include "fmod_errors.h"
+#include "fmod_studio.hpp"
 
 #include "callbacks.h"
 #include "file_callbacks.h"

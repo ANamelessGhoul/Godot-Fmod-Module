@@ -33,7 +33,7 @@
 #include "core/map.h"
 #include "core/os/mutex.h"
 
-#include "api/studio/inc/fmod_studio.hpp"
+#include "fmod_studio.hpp"
 
 namespace Callbacks {
 

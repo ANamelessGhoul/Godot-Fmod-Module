@@ -4,8 +4,8 @@
 #include "core/os/file_access.h"
 #include <condition_variable>
 #include <thread>
-#include "api/core/inc/fmod_common.h"
-#include "api/studio/inc/fmod_studio_common.h"
+#include "fmod_common.h"
+#include "fmod_studio_common.h"
 
 namespace Callbacks {
 	struct FmodAsyncReadInfoHandle {
